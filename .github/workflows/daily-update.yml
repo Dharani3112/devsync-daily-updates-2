@@ -1,0 +1,51 @@
+name: Daily Repository Update
+
+on:
+  schedule:
+    # Runs at 10:15 UTC every day (different time than first repo)
+    - cron: "15 10 * * *"
+  workflow_dispatch: # Allow manual triggers
+
+jobs:
+  daily-update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Daily update for 23f2001449@ds.study.iitm.ac.in
+        run: |
+          # Create or update a daily activity log
+          echo "Daily update - $(date -u)" >> daily-activity.log
+          echo "Automated commit for DevSync workflow management" >> daily-activity.log
+          echo "---" >> daily-activity.log
+
+      - name: Update status file
+        run: |
+          # Create a status file with current timestamp
+          cat > status.json << EOF
+          {
+            "last_update": "$(date -u -Iseconds)",
+            "workflow_run": "daily-update",
+            "status": "active",
+            "commit_count": $(git rev-list --count HEAD 2>/dev/null || echo "0")
+          }
+          EOF
+
+      - name: Commit and push changes
+        run: |
+          # Configure git with GitHub Actions bot credentials
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Add changes
+          git add daily-activity.log status.json
+          
+          # Create commit with timestamp
+          git commit -m "Daily automated update - $(date -u '+%Y-%m-%d %H:%M:%S UTC')" || echo "No changes to commit"
+          
+          # Push changes
+          git push
